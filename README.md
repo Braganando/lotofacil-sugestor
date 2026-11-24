@@ -63,7 +63,7 @@ lotofacil-sugestor/
 
 ```powershell
 # 1. Clonar o repositório
-git clone [https://github.com/Braganando/lotofacil-sugestor.git](https://github.com/Braganando/lotofacil-sugestor.git)
+git clone https://github.com/Braganando/lotofacil-sugestor.git
 cd lotofacil-sugestor
 
 # 2. Criar e ativar o ambiente virtual
