@@ -221,3 +221,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Dados locais do projeto (gerados pelos scripts)
+data/raw/
+data/processed/
