@@ -5,3 +5,7 @@ openpyxl
 matplotlib
 seaborn
 statsmodels
+scikit-learn
+lightgbm
+shap
+joblib

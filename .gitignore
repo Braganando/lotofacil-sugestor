@@ -225,3 +225,6 @@ __marimo__/
 # Dados locais do projeto (gerados pelos scripts)
 data/raw/
 data/processed/
+
+# Artefatos binários de modelos treinados
+models/

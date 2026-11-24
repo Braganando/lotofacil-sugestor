@@ -11,13 +11,27 @@ PRIMOS = {2, 3, 5, 7, 11, 13, 17, 19, 23}
 FIBONACCI = {1, 2, 3, 5, 8, 13, 21}
 DIAG_PRINCIPAL = {1, 7, 13, 19, 25}
 DIAG_SECUNDARIA = {5, 9, 13, 17, 21}
+PADRAO_X = DIAG_PRINCIPAL | DIAG_SECUNDARIA
+
+BASE_FEATURE_COLS = [
+    "soma", "dist_soma_195", "qtd_pares", "dist_pares_equilibrio",
+    "qtd_primos", "qtd_fibonacci", "qtd_baixas_1_15", "qtd_multiplos_3",
+    "dezena_min", "dezena_max", "qtd_pares_consecutivos", "maior_sequencia",
+    "maior_salto", "qtd_blocos", "qtd_moldura", "linhas_cheias", "linhas_vazias",
+    "colunas_cheias", "colunas_vazias", "std_linhas", "std_colunas",
+    "diag_principal", "diag_secundaria", "diag_max", "qtd_x_volante",
+    "simetria_horizontal", "simetria_vertical", "simetria_rotacional",
+    "vizinhos_ortogonais", "repetidas_anterior", "dist_repetidas_9",
+]
+DEZENA_FLAG_COLS = [f"tem_{n:02d}" for n in range(1, 26)]
+FEATURE_COLS = BASE_FEATURE_COLS + DEZENA_FLAG_COLS
 
 
 def extrair_features(
     dezenas: Iterable[int],
     dezenas_anterior: Iterable[int] | None = None,
 ) -> dict[str, float | int]:
-    """Extrai atributos numéricos, sequenciais, geométricos (5x5) e de recência de um jogo."""
+    """Extrai 56 atributos (numéricos, sequenciais, geométricos 5x5, recência e flags por dezena)."""
     nums = sorted(int(d) for d in dezenas)
     if len(nums) != 15:
         raise ValueError(f"Esperadas 15 dezenas, recebidas {len(nums)}.")
@@ -73,6 +87,7 @@ def extrair_features(
     diag_principal = len(conj & DIAG_PRINCIPAL)
     diag_secundaria = len(conj & DIAG_SECUNDARIA)
     diag_max = max(diag_principal, diag_secundaria)
+    qtd_x_volante = len(conj & PADRAO_X)
 
     simetria_horizontal = float(np.mean(grid == grid[:, ::-1]))
     simetria_vertical = float(np.mean(grid == grid[::-1, :]))
@@ -90,7 +105,7 @@ def extrair_features(
         repetidas_anterior = np.nan
         dist_repetidas_9 = np.nan
 
-    return {
+    feats: dict[str, float | int] = {
         "soma": soma,
         "dist_soma_195": dist_soma_195,
         "qtd_pares": qtd_pares,
@@ -115,6 +130,7 @@ def extrair_features(
         "diag_principal": diag_principal,
         "diag_secundaria": diag_secundaria,
         "diag_max": diag_max,
+        "qtd_x_volante": qtd_x_volante,
         "simetria_horizontal": round(simetria_horizontal, 4),
         "simetria_vertical": round(simetria_vertical, 4),
         "simetria_rotacional": round(simetria_rotacional, 4),
@@ -122,6 +138,12 @@ def extrair_features(
         "repetidas_anterior": repetidas_anterior,
         "dist_repetidas_9": dist_repetidas_9,
     }
+
+    # --- 5. Indicadores individuais das 25 dezenas ---
+    for n in range(1, 26):
+        feats[f"tem_{n:02d}"] = 1 if n in conj else 0
+
+    return feats
 
 
 def formatar_volante(dezenas: Iterable[int]) -> str:
@@ -161,54 +183,20 @@ def gerar_base_features(in_path: Path = IN_PATH, out_path: Path = OUT_PATH) -> p
 
 
 def relatorio_exploratorio(df: pd.DataFrame) -> None:
-    cols_dezenas = [f"d{i:02d}" for i in range(1, 16)]
     validos = df.dropna(subset=["indice_popularidade_14", "repetidas_anterior"]).copy()
     validos["log_pop_14"] = np.log(validos["indice_popularidade_14"])
 
-    feature_cols = [
-        "soma", "dist_soma_195", "qtd_pares", "dist_pares_equilibrio",
-        "qtd_primos", "qtd_fibonacci", "qtd_baixas_1_15", "qtd_multiplos_3",
-        "dezena_min", "dezena_max", "qtd_pares_consecutivos", "maior_sequencia",
-        "maior_salto", "qtd_blocos", "qtd_moldura", "linhas_cheias", "linhas_vazias",
-        "colunas_cheias", "colunas_vazias", "std_linhas", "std_colunas",
-        "diag_principal", "diag_secundaria", "diag_max",
-        "simetria_horizontal", "simetria_vertical", "simetria_rotacional",
-        "vizinhos_ortogonais", "repetidas_anterior", "dist_repetidas_9",
-    ]
-
     corrs = []
-    for col in feature_cols:
+    for col in FEATURE_COLS:
         spearman = validos[col].corr(validos["indice_popularidade_14"], method="spearman")
         pearson_log = validos[col].corr(validos["log_pop_14"], method="pearson")
         corrs.append({"feature": col, "spearman": spearman, "pearson_log": pearson_log, "abs_s": abs(spearman)})
 
     df_corr = pd.DataFrame(corrs).sort_values("abs_s", ascending=False).drop(columns=["abs_s"])
 
-    print(f"Base enriquecida salva em: {OUT_PATH} ({len(df)} concursos, {len(feature_cols)} features)\n")
-    print("--- Ranking de correlação com Popularidade (14 acertos) ---")
-    print("  (+) = quanto MAIOR a feature, MAIS gente joga / mais rateio")
-    print("  (-) = quanto MAIOR a feature, MENOS gente joga / menos rateio\n")
-    print(df_corr.head(15).to_string(index=False, float_format=lambda x: f"{x:+.4f}"))
-
-    print("\n=== VOLANTE 5x5: TOP 3 MAIS POPULARES ===")
-    for _, r in validos.nlargest(3, "indice_popularidade_14").iterrows():
-        dez = [int(r[c]) for c in cols_dezenas]
-        print(
-            f"\nConcurso {int(r['concurso'])} ({r['data_apuracao']}) | "
-            f"Pop14: {r['indice_popularidade_14']:.2f}x | "
-            f"Ganhadores 15: {int(r['ganhadores_15'])} | Repetidas: {int(r['repetidas_anterior'])}"
-        )
-        print(formatar_volante(dez))
-
-    print("\n=== VOLANTE 5x5: TOP 3 MENOS POPULARES ===")
-    for _, r in validos.nsmallest(3, "indice_popularidade_14").iterrows():
-        dez = [int(r[c]) for c in cols_dezenas]
-        print(
-            f"\nConcurso {int(r['concurso'])} ({r['data_apuracao']}) | "
-            f"Pop14: {r['indice_popularidade_14']:.2f}x | "
-            f"Ganhadores 15: {int(r['ganhadores_15'])} | Repetidas: {int(r['repetidas_anterior'])}"
-        )
-        print(formatar_volante(dez))
+    print(f"Base enriquecida salva em: {OUT_PATH} ({len(df)} concursos, {len(FEATURE_COLS)} features)\n")
+    print("--- Top 20 correlações com Popularidade (14 acertos) ---")
+    print(df_corr.head(20).to_string(index=False, float_format=lambda x: f"{x:+.4f}"))
 
 
 if __name__ == "__main__":

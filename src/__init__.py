@@ -1,1 +1,0 @@
-New-Item -Path src\__init__.py -ItemType File
