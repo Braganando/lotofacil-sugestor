@@ -1,0 +1,7 @@
+httpx
+pandas
+numpy
+openpyxl
+matplotlib
+seaborn
+statsmodels
