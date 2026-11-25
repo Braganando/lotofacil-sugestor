@@ -12,6 +12,9 @@ from src.models.optimizer import (
     LotofacilOptimizer,
 )
 
+from pathlib import Path
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 # --- Schemas de Entrada ---
 
@@ -98,7 +101,7 @@ app = FastAPI(
         "para estimar a popularidade de combinações da Lotofácil (15 a 20 dezenas) e sugerir "
         "jogos com menor risco de divisão de prêmio."
     ),
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 
@@ -110,6 +113,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+if WEB_DIR.exists():
+    app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def serve_frontend():
+    return FileResponse(WEB_DIR / "index.html")
 
 def _get_optimizer() -> LotofacilOptimizer:
     opt = getattr(app.state, "optimizer", None)

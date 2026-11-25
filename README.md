@@ -77,8 +77,12 @@ lotofacil-sugestor/
 │   ├── models/
 │   │   ├── train_model.py       # Treino LightGBM, validação temporal, backtest e SHAP global
 │   │   └── optimizer.py         # Avaliador SHAP, desdobramento 15–20 dezenas e otimizador com bitmask
-│   └── api/
-│       └── main.py              # API REST FastAPI com CORS e documentação OpenAPI (/docs)
+│   ├── api/
+│   │   └── main.py              # API REST FastAPI + serviço de arquivos estáticos (/ e /docs)
+│   └── web/
+│       ├── index.html           # Interface Web com abas Sugerir e Avaliar
+│       ├── styles.css           # Tema de alto contraste com fundo gelo e mini-volantes 5x5
+│       └── app.js               # Lógica do volante interativo, custo em tempo real e barras SHAP
 ├── tests/test_api.py            # Suíte automatizada de testes (pytest + TestClient)
 ├── requirements.txt
 └── README.md
@@ -92,7 +96,7 @@ lotofacil-sugestor/
 
 ```powershell
 # 1. Clonar e preparar o ambiente virtual
-git clone [https://github.com/Braganando/lotofacil-sugestor.git](https://github.com/Braganando/lotofacil-sugestor.git)
+git clone https://github.com/Braganando/lotofacil-sugestor.git
 cd lotofacil-sugestor
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -104,7 +108,7 @@ python src/data/process_lotofacil.py
 python src/features/volante_features.py
 python -m src.models.train_model
 
-# 3. Subir a API REST (Swagger em [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs))
+# 3. Subir a aplicação (Interface Web em http://127.0.0.1:8000 | Swagger em /docs)
 uvicorn src.api.main:app --reload
 
 # 4. Rodar a suíte de testes automatizados
@@ -121,5 +125,6 @@ python -m pytest -v
 - [x] **Fase 4:** Análise exploratória visual estilo *The New S Language* (`v0.1.0`)
 - [x] **Fase 5:** Modelo `LightGBM` com validação temporal, explicabilidade `SHAP` e otimizador anti-rateio (`v0.2.0`)
 - [x] **Fase 6A:** Suporte matemático a desdobramentos (15–20 dezenas), API REST `FastAPI` e testes automatizados (`v0.3.0`)
-- [ ] **Fase 6B:** Interface Web interativa com volante $5 \times 5$, seletor de jogos/dezenas e gráficos SHAP
-- [ ] **Fase 6C:** Persistência em nuvem (`Supabase`) e relatório final de execução do projeto
+- [x] **Fase 6B:** Interface Web interativa com volante $5 \times 5$, seletor de jogos/dezenas (15–20) e barras SHAP (`v0.4.0`)
+- [ ] **Fase 6C:** Fechamento combinatório real (*Covering Design* guiado pelo `LightGBM`) e simulador Monte Carlo de carteira (`v0.5.0`)
+- [ ] **Fase 6D:** Persistência em nuvem (`Supabase`), conferência automática de apostas e relatório final de execução (`v1.0.0`)

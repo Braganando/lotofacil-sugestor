@@ -157,3 +157,9 @@ def test_sugerir_conflito_fixas_excluidas_retorna_422(client: TestClient):
     payload = {"n_jogos": 2, "fixas": [6], "excluidas": [6]}
     resp = client.post("/sugerir", json=payload)
     assert resp.status_code == 422
+
+def test_frontend_index_ok(client: TestClient):
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+    assert "Lotofácil Sugestor" in resp.text

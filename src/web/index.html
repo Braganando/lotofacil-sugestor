@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lotofácil Sugestor — Motor Anti-Rateio</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div>
+        <h1>Lotofácil Sugestor</h1>
+        <p class="subtitle">Otimização Comportamental Anti-Rateio • LightGBM + SHAP</p>
+      </div>
+      <div class="status-pills" id="status-pills">
+        <span class="pill">Carregando motor...</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <nav class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="sugerir" role="tab" aria-selected="true">
+        Sugerir Jogos
+      </button>
+      <button class="tab-btn" data-tab="avaliar" role="tab" aria-selected="false">
+        Avaliar Meu Jogo
+      </button>
+      <a class="tab-link" href="/docs" target="_blank" rel="noopener">API Swagger ↗</a>
+    </nav>
+
+    <!-- ABA 1: SUGERIR JOGOS -->
+    <section id="tab-sugerir" class="tab-panel active">
+      <div class="workspace">
+        <div class="card controls-card">
+          <h2>Configurar Sugestões</h2>
+
+          <div class="form-grid">
+            <label class="field">
+              <span>Quantidade de jogos</span>
+              <select id="sel-n-jogos">
+                <option value="1">1 jogo</option>
+                <option value="2">2 jogos</option>
+                <option value="3" selected>3 jogos</option>
+                <option value="5">5 jogos</option>
+                <option value="8">8 jogos</option>
+                <option value="10">10 jogos</option>
+                <option value="15">15 jogos</option>
+                <option value="20">20 jogos</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Dezenas por jogo</span>
+              <select id="sel-qtd-dezenas">
+                <option value="15" selected>15 dezenas (1 aposta)</option>
+                <option value="16">16 dezenas (16 apostas)</option>
+                <option value="17">17 dezenas (136 apostas)</option>
+                <option value="18">18 dezenas (816 apostas)</option>
+                <option value="19">19 dezenas (3.876 apostas)</option>
+                <option value="20">20 dezenas (15.504 apostas)</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field-label">
+                Diversidade mínima
+                <span
+                  class="help-badge"
+                  title="Quantidade mínima de dezenas diferentes entre quaisquer dois jogos sugeridos. Evita receber bilhetes quase idênticos."
+                >?</span>
+              </span>
+              <select id="sel-diversidade">
+                <option value="1">1 dezena diferente</option>
+                <option value="2">2 dezenas diferentes</option>
+                <option value="3" selected>3 dezenas diferentes</option>
+                <option value="4">4 dezenas diferentes</option>
+                <option value="5">5 dezenas diferentes</option>
+              </select>
+            </label>
+
+            <div class="cost-box" id="sugerir-custo-box">
+              <span class="cost-label">Custo total estimado</span>
+              <strong id="sugerir-custo-valor">R$ 10,50</strong>
+              <small id="sugerir-politica-hist">Bloqueio rígido de sorteios anteriores</small>
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="chk-excluir-sorteados" checked />
+            <span>Evitar combinações já sorteadas no histórico oficial</span>
+          </label>
+
+          <div class="volante-header">
+            <h3>Filtros no Volante 5×5 (opcional)</h3>
+            <div class="legend">
+              <span class="dot fixa"></span> Fixa (1º clique)
+              <span class="dot excluida"></span> Excluída (2º clique)
+            </div>
+          </div>
+
+          <div class="volante-grid" id="grid-sugerir"></div>
+
+          <div class="quick-actions">
+            <button type="button" class="btn btn-ghost" id="btn-preset-eda">
+              Preset EDA (Fixar 06, 16 / Excluir 13)
+            </button>
+            <button type="button" class="btn btn-ghost" id="btn-limpar-sugerir">
+              Limpar filtros
+            </button>
+          </div>
+
+          <div class="feedback-msg" id="msg-sugerir"></div>
+
+          <button type="button" class="btn btn-primary btn-full" id="btn-gerar">
+            Gerar Jogos Anti-Rateio
+          </button>
+        </div>
+
+        <div class="results-column">
+          <div id="resultados-sugerir" class="results-list">
+            <div class="empty-state card">
+              <h3>Pronto para otimizar</h3>
+              <p>
+                Escolha a quantidade de jogos e dezenas à esquerda e clique em
+                <strong>Gerar Jogos Anti-Rateio</strong>. O motor busca regiões menos
+                congestionadas no volante 5×5 e explica cada sugestão via <strong>SHAP</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 2: AVALIAR MEU JOGO -->
+    <section id="tab-avaliar" class="tab-panel">
+      <div class="workspace">
+        <div class="card controls-card">
+          <h2>Monte seu Jogo (15 a 20 dezenas)</h2>
+
+          <div class="eval-counter-bar">
+            <div>
+              <strong id="eval-count">0</strong> dezenas selecionadas
+              <span class="muted">(mín. 15, máx. 20)</span>
+            </div>
+            <div class="eval-cost" id="eval-cost">R$ 0,00</div>
+          </div>
+
+          <div class="volante-grid" id="grid-avaliar"></div>
+
+          <div class="quick-actions">
+            <button type="button" class="btn btn-ghost" id="btn-carregar-ultimo">
+              Último concurso
+            </button>
+            <button type="button" class="btn btn-ghost" id="btn-carregar-popular">
+              Exemplo popular ("X")
+            </button>
+            <button type="button" class="btn btn-ghost" id="btn-limpar-avaliar">
+              Limpar
+            </button>
+          </div>
+
+          <div class="feedback-msg" id="msg-avaliar"></div>
+
+          <button type="button" class="btn btn-primary btn-full" id="btn-avaliar" disabled>
+            Avaliar Jogo
+          </button>
+        </div>
+
+        <div class="results-column">
+          <div id="resultados-avaliar" class="results-list">
+            <div class="empty-state card">
+              <h3>Diagnóstico de Rateio</h3>
+              <p>
+                Marque entre <strong>15 e 20 dezenas</strong> no volante para verificar se a
+                combinação já foi sorteada, qual a popularidade prevista e quais padrões
+                aumentam ou reduzem o risco de divisão de prêmio.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer container">
+    <p>
+      Aviso: evitar combinações populares reduz a expectativa de divisão do prêmio em caso de acerto,
+      mas <strong>não altera a probabilidade matemática de ganhar</strong>.
+    </p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
